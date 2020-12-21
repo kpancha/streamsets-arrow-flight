@@ -75,7 +75,7 @@
               <argument>-Xms64m</argument>
               <argument>-Xmx64m</argument>
               <argument>-XX:MaxDirectMemorySize=4g</argument>
-              <argument>arrow.SDCFlightClient</argument>
+              <argument>arrow.GenerateRandomDataApplication</argument>
             </arguments>
           </configuration>
         </plugin>
