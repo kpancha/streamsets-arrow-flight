@@ -46,28 +46,25 @@ public class FlightClientStreamWriter<T> {
               FlightClient client = FlightClient.builder(allocator, defaultLocation).build()) {
 
             FlightClient.ClientStreamListener stream = client.startPut(descriptor, root, dictProvider, new AsyncPutListener());
-            int index = 0;
+            int i = 0;
             // Write vectorized Persons to client stream in chunks
-            while (index < values.length) {
+            while (i < values.length) {
               root.allocateNew();
               int chunkIdx = 0;
-              while (chunkIdx < chunkSize && index + chunkIdx < values.length) {
-                  vectorizer.vectorize(values[index + chunkIdx], chunkIdx, root);
+              // Load batch of chunkSize or smaller
+              while (chunkIdx < chunkSize && i + chunkIdx < values.length) {
+                  vectorizer.vectorize(values[i + chunkIdx], chunkIdx, root);
                   chunkIdx++;
               }
               root.setRowCount(chunkIdx);
               System.out.println(root.contentToTSVString());
-              final byte[] rawMetadata = Integer.toString(index).getBytes(StandardCharsets.UTF_8);
-              final ArrowBuf metadata = allocator.buffer(rawMetadata.length);
-              metadata.writeBytes(rawMetadata);
-              // Transfers ownership of the buffer, so do not release it ourselves
-              stream.putNext(metadata);
-              index += chunkIdx;
+              stream.putNext();
+              i += chunkIdx;
               root.clear();
             }
-          stream.completed();
+            stream.completed();
           // Need to  call this, or exceptions from the server get swallowed
-          stream.getResult();
+            stream.getResult();
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
